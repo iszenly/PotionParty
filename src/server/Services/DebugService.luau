@@ -6,6 +6,7 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Debug = require(ReplicatedStorage.Shared.Config.Debug)
 local Ingredients = require(ReplicatedStorage.Shared.Config.Ingredients)
@@ -21,6 +22,12 @@ local DebugService = {}
 
 function DebugService.init()
 	if not Debug.enabled() then
+		if RunService:IsStudio() then
+			-- Studio numa experiência que não é de teste (ex.: a original).
+			warn(
+				`[PotionParty] painel DEBUG desligado: GameId {game.GameId} não está em Debug.testGameIds (seguro para produção)`
+			)
+		end
 		return
 	end
 	warn("[PotionParty] modo DEBUG ativo (só no Studio)")

@@ -598,7 +598,7 @@ function ShopService.like(player: Player, plot: Plot)
 		return
 	end
 	if owner == player then
-		Announce.player(player, "announce.cantLikeOwn", nil, "toast")
+		Announce.player(player, "announce.cantLikeOwn", nil, "toastInfo")
 		return
 	end
 	local data = DataService.get(player)
@@ -612,7 +612,7 @@ function ShopService.like(player: Player, plot: Plot)
 	end
 	local ownerKey = tostring(owner.UserId)
 	if data.likesGiven.users[ownerKey] then
-		Announce.player(player, "announce.alreadyLiked", nil, "toast")
+		Announce.player(player, "announce.alreadyLiked", nil, "toastInfo")
 		return
 	end
 	data.likesGiven.users[ownerKey] = true

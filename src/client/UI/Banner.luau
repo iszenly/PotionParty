@@ -166,7 +166,11 @@ function Banner.mount(overlay: ScreenGui)
 		end
 		local text = Locale.t(payload.key, payload.params)
 		if payload.style == "toast" then
-			Toast.show(text, "good")
+			-- Mensagens de erro ("error.*") ficam vermelhas; as outras, verdes (correção P11).
+			local isError = string.sub(payload.key, 1, 6) == "error."
+			Toast.show(text, if isError then "bad" else "good")
+		elseif payload.style == "toastInfo" then
+			Toast.show(text, "info")
 		else
 			Banner.show(text, payload.style)
 		end

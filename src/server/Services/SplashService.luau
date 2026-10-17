@@ -8,7 +8,10 @@
 	- não dá para arremessar de dentro de uma zona segura (lobby e lojas);
 	- quem está numa zona segura ou com o Modo Escudo ligado não é afetado;
 	- alcance máximo e intervalo entre arremessos;
-	- quem arremessa nunca é atingido pelo próprio respingo.
+	- quem arremessa nunca é atingido pelo próprio respingo;
+	- quem acabou de ser atingido fica imune a NOVOS respingos por
+	  Social.splashImmunity segundos (anti-spam). Isso não impede o jogador de
+	  beber as próprias poções.
 ]]
 
 local Players = game:GetService("Players")
@@ -30,6 +33,7 @@ local MissionService = require(script.Parent.MissionService)
 
 local splashEvent = Net.event("Splash")
 local lastThrow: { [Player]: number } = {}
+local immuneUntil: { [Player]: number } = {} -- os.clock() até quando o jogador está imune
 
 local SplashService = {}
 
@@ -51,13 +55,16 @@ local function resolveSplash(thrower: Player, impact: Vector3, info: Types.Recip
 		if root and (root.Position - impact).Magnitude <= Social.splashRadius then
 			local data = DataService.get(target)
 			if MapService.inSafeZone(root.Position) or (data and data.settings.shield) then
-				Announce.player(thrower, "announce.splashBlocked", { name = target.DisplayName }, "toast")
+				Announce.player(thrower, "announce.splashBlocked", { name = target.DisplayName }, "toastInfo")
+			elseif (immuneUntil[target] or 0) > os.clock() then
+				Announce.player(thrower, "announce.splashImmune", { name = target.DisplayName }, "toastInfo")
 			else
 				local effect = table.clone(info.effect)
 				effect.duration = Social.splashDuration
 				local overlay = if mutation then mutation.overlay else nil
 				if EffectService.apply(target, effect, info.name, overlay, info.color) then
 					hits += 1
+					immuneUntil[target] = os.clock() + Social.splashImmunity
 					Announce.player(target, "announce.splashedBy", { name = thrower.DisplayName }, "toast")
 				end
 			end
@@ -71,6 +78,7 @@ end
 function SplashService.init()
 	Players.PlayerRemoving:Connect(function(player)
 		lastThrow[player] = nil
+		immuneUntil[player] = nil
 	end)
 
 	-- targetUserId é opcional: sem alvo, o frasco cai à frente do jogador.

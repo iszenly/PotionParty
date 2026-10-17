@@ -33,6 +33,9 @@ local IngredientService = require(script.Parent.IngredientService)
 local MissionService = require(script.Parent.MissionService)
 
 local MAX_TAP_DISTANCE = 20
+-- Distância máxima (do centro do personagem até o item) para coletar.
+-- Folga para personagens gigantes (efeito Gigante dobra o tamanho).
+local PICKUP_RADIUS = 10
 
 type Round = {
 	folder: Folder,
@@ -150,6 +153,12 @@ local function makePickup(folder: Folder, position: Vector3, ingredientId: strin
 		end
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if not humanoid or humanoid.Health <= 0 then
+			return
+		end
+		-- Correção P4: o toque pode ser falsificado por exploits; então conferimos
+		-- no servidor se o personagem está mesmo perto do item.
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not root or not root:IsA("BasePart") or (root.Position - part.Position).Magnitude > PICKUP_RADIUS then
 			return
 		end
 		local data = DataService.get(player)

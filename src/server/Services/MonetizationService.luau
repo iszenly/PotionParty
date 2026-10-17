@@ -24,11 +24,11 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local Types = require(ReplicatedStorage.Shared.Types)
 local Monetization = require(ReplicatedStorage.Shared.Config.Monetization)
 local Ingredients = require(ReplicatedStorage.Shared.Config.Ingredients)
+local Debug = require(ReplicatedStorage.Shared.Config.Debug)
 local Announce = require(script.Parent.Parent.Announce)
 local DataService = require(script.Parent.DataService)
 local SyncService = require(script.Parent.SyncService)
@@ -37,7 +37,16 @@ local SettingsService = require(script.Parent.SettingsService)
 
 type PlayerData = Types.PlayerData
 
-local MAX_RECEIPTS = 100 -- recibos guardados por jogador
+--[[
+	Recibos guardados por jogador (correção P12).
+	O Roblox só reenvia um recibo que NÃO recebeu PurchaseGranted, e pode fazer isso
+	muito tempo depois (por exemplo, quando o jogador volta ao jogo). Por isso NÃO
+	apagamos recibos por idade: um jogador que some por meses e volta precisa
+	continuar protegido contra entrega dupla.
+	Só apagamos os mais antigos quando passa deste limite. Cada recibo ocupa ~60
+	bytes; 1000 recibos ≈ 60 KB, bem abaixo do limite de 4 MB por perfil.
+]]
+local MAX_RECEIPTS = 1000
 local LOAD_WAIT = 10 -- segundos esperando os dados carregarem
 local SAVE_WAIT = 15 -- segundos esperando o salvamento confirmar
 
@@ -50,8 +59,9 @@ local function refreshPasses(player: Player, data: PlayerData)
 			if ok then
 				(data.passes :: any)[def.key] = if owns then true else nil
 			end
-		elseif not RunService:IsStudio() then
-			-- Pass sem ID configurado não vale em servidor real (no Studio o DEBUG pode ligar).
+		elseif not Debug.enabled() then
+			-- Pass sem ID configurado só vale onde o painel DEBUG pode ligá-lo
+			-- (Studio na experiência de teste). Em qualquer outro lugar, é removido.
 			(data.passes :: any)[def.key] = nil
 		end
 	end

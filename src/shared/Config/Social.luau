@@ -16,6 +16,7 @@ return {
 	splashDuration = 8, -- segundos que o alvo fica transformado
 	splashCooldown = 2, -- segundos entre arremessos do mesmo jogador
 	splashTravelTime = 0.6, -- tempo de voo do frasco
+	splashImmunity = 10, -- segundos imune a novos respingos depois de ser atingido
 
 	-- Troca
 	-- Interruptor geral: false desliga as trocas para todos (o botão "Trocar" some).

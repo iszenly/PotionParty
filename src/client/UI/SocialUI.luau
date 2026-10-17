@@ -35,7 +35,10 @@ local function checkFriend(userId: number)
 	task.spawn(function()
 		local ok, result = pcall(Players.LocalPlayer.IsFriendsWithAsync, Players.LocalPlayer, userId)
 		friendCache[userId] = ok and result == true
-		render()
+		-- task.defer: redesenha DEPOIS do desenho atual terminar. Sem isso, quando a
+		-- chamada falha na hora (jogadores de teste do Studio), a lista era redesenhada
+		-- no meio do desenho anterior e os jogadores apareciam duplicados.
+		task.defer(render)
 	end)
 end
 

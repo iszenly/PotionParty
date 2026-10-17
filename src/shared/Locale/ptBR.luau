@@ -152,6 +152,7 @@ local strings: { [string]: string } = {
 
 	-- Fase 3: anúncios
 	["announce.splashBlocked"] = "🛡️ {name} está protegido!",
+	["announce.splashImmune"] = "⏳ {name} acabou de levar um respingo. Espere um pouco!",
 	["announce.splashedBy"] = "💦 {name} te acertou com um respingo!",
 	["announce.offlineSales"] = "🏪 Enquanto você estava fora, sua loja vendeu {count} poções por {coins} moedas!",
 	["announce.cantLikeOwn"] = "Você não pode curtir a própria loja 😅",

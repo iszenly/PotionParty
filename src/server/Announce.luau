@@ -8,6 +8,8 @@
 		Announce.player(player, "announce.cometReward", { amount = 1, name = "Poeira" })
 
 	style: "info" (padrão), "comet", "world" (efeito especial dourado com confete)
+	       "toast"     mensagem pequena embaixo (vermelha se a chave for "error.*", senão verde)
+	       "toastInfo" mensagem pequena neutra (avisos que não são erro nem sucesso)
 ]]
 
 local Net = require(script.Parent.Net)

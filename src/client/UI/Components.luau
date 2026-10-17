@@ -59,13 +59,18 @@ function UI.padding(parent: Instance, pixels: number)
 	UI.new("UIPadding", { PaddingTop = p, PaddingBottom = p, PaddingLeft = p, PaddingRight = p, Parent = parent })
 end
 
+-- Listas VERTICAIS começam do topo: centralizar uma lista com rolagem faz os
+-- primeiros itens "vazarem" para cima quando não cabem (não dá para rolar até eles).
+-- Listas HORIZONTAIS (fileiras de botões) continuam centralizadas na altura.
 function UI.list(parent: Instance, direction: Enum.FillDirection, spacing: number, align: Enum.HorizontalAlignment?)
 	return UI.new("UIListLayout", {
 		FillDirection = direction,
 		Padding = UDim.new(0, spacing),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		HorizontalAlignment = align or Enum.HorizontalAlignment.Left,
-		VerticalAlignment = Enum.VerticalAlignment.Center,
+		VerticalAlignment = if direction == Enum.FillDirection.Vertical
+			then Enum.VerticalAlignment.Top
+			else Enum.VerticalAlignment.Center,
 		Parent = parent,
 	})
 end

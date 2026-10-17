@@ -202,7 +202,7 @@ function FriendshipService.init()
 				return
 			end
 			if sides[side] then
-				Announce.player(player, "announce.sideTaken", nil, "toast")
+				Announce.player(player, "announce.sideTaken", nil, "toastInfo")
 				return
 			end
 			sides[side] = player
