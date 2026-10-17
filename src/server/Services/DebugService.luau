@@ -58,8 +58,8 @@ function DebugService.init()
 			data.missions = { day = 0, list = {} }
 		elseif command == "offline" then
 			-- Simula ter ficado 2 horas offline e roda a venda automática agora.
-			data.lastLogout = os.time() - 7200
-			ShopService.offlineSales(player, data)
+			-- (Não mexe em data.lastLogout: a simulação não afeta o próximo login.)
+			ShopService.offlineSales(player, data, os.time() - 7200)
 		else
 			return Net.fail("error.invalid")
 		end

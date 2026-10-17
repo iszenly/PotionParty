@@ -76,7 +76,10 @@ local profiles: { [Player]: any } = {}
 
 local DataService = {}
 
--- Dispara (player, data) quando os dados de um jogador terminam de carregar.
+-- Dispara (player, data, lastSeen) quando os dados de um jogador terminam de carregar.
+-- lastSeen = os.time() da última vez que o jogador foi "visto" (último salvamento da
+-- sessão anterior). Use ESTE valor para calcular tempo offline, não data.lastLogout
+-- (que já foi atualizado para "agora" antes do sinal disparar).
 DataService.loaded = Signal.new()
 -- Dispara (player, data) logo antes de liberar os dados (jogador saindo).
 DataService.releasing = Signal.new()
@@ -142,20 +145,39 @@ local function onPlayerAdded(player: Player)
 		player:Kick(Locale.t("kick.sessionEnded"))
 	end)
 
-	-- Último salvamento (saída, fechamento do servidor ou outro servidor pegando a sessão).
-	profile.OnLastSave:Connect(function()
-		profile.Data.lastLogout = os.time()
-	end)
-
 	if player.Parent ~= Players then
-		-- O jogador saiu enquanto carregava.
+		-- O jogador saiu enquanto carregava. Salva sem mexer em "lastLogout",
+		-- para o tempo offline continuar contando até a próxima entrada.
 		profile:EndSession()
 		return
 	end
 
 	migrate(profile.Data)
+
+	--[[
+		Tempo offline (correção P3):
+		"lastLogout" significa "até quando o tempo offline já foi contabilizado".
+		1. Guardamos o valor antigo (lastSeen) para a venda offline usar.
+		2. Marcamos "agora" ANTES de qualquer pagamento offline. Tudo isso roda sem
+		   pausas (sem task.wait), então nenhum salvamento acontece no meio: qualquer
+		   gravação que tiver as moedas da venda offline também terá o horário novo.
+		   Assim um servidor que cai depois não faz a venda offline pagar duas vezes.
+		3. A cada salvamento (autosave, compra, troca) atualizamos o horário de novo:
+		   se o servidor cair, o próximo login só conta o tempo depois do último
+		   salvamento, e não o tempo em que o jogador estava online.
+	]]
+	local lastSeen = profile.Data.lastLogout
+	profile.Data.lastLogout = os.time()
+	profile.OnSave:Connect(function()
+		profile.Data.lastLogout = os.time()
+	end)
+	-- Último salvamento (saída, fechamento do servidor ou outro servidor pegando a sessão).
+	profile.OnLastSave:Connect(function()
+		profile.Data.lastLogout = os.time()
+	end)
+
 	profiles[player] = profile
-	DataService.loaded:Fire(player, profile.Data)
+	DataService.loaded:Fire(player, profile.Data, lastSeen)
 end
 
 function DataService.init()

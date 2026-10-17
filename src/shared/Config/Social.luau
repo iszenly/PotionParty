@@ -18,6 +18,10 @@ return {
 	splashTravelTime = 0.6, -- tempo de voo do frasco
 
 	-- Troca
+	-- Interruptor geral: false desliga as trocas para todos (o botão "Trocar" some).
+	-- Mudar este valor exige publicar o jogo de novo (servidores novos usam o valor novo).
+	-- Antes de liberar trocas ao público, reavaliar o risco P1 (veja README, "Riscos conhecidos").
+	tradingEnabled = true,
 	tradeMaxStacks = 6, -- tipos diferentes de item por lado
 	tradeRequestTimeout = 20, -- segundos para aceitar um convite
 	tradeConfirmDelay = 3, -- segundos de espera depois que os dois ficam "prontos" (evita golpe de troca rápida)

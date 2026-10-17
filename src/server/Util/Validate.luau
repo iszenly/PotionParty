@@ -17,6 +17,15 @@ function Validate.integer(value: any, min: number, max: number): boolean
 	return type(value) == "number" and value == value and value % 1 == 0 and value >= min and value <= max
 end
 
+--[[
+	UserId de outro jogador. Aceita negativos porque o Studio (Server & Clients)
+	cria jogadores de teste com UserId -1, -2... Em servidores reais são sempre
+	positivos. Um id que não existe é recusado depois, ao procurar o jogador.
+]]
+function Validate.userId(value: any): boolean
+	return Validate.integer(value, -2 ^ 52, 2 ^ 52) and value ~= 0
+end
+
 -- Texto com tamanho limitado.
 function Validate.text(value: any, maxLength: number): boolean
 	return type(value) == "string" and #value > 0 and #value <= maxLength

@@ -104,6 +104,12 @@ O mapa tem **6 terrenos de loja**. Em **Game Settings → Places → Server Size
 - Para testar com os tempos reais, mude `fastTimersInStudio` para `false`. O painel de debug nunca existe em servidores reais.
 - A **Descoberta Mundial**, o **ranking** e o anúncio entre servidores dependem do **API Services** ligado. Sem ele, as receitas ficam como "Registrando…" no Grimório e são registradas na próxima vez que o jogador entrar num servidor com acesso.
 
+## Riscos conhecidos
+
+- **P1: troca não é durável se o servidor cair.** A troca move os itens na memória e depois salva os dois perfis em duas gravações separadas. Se o servidor cair *de repente* (crash) entre as duas gravações, um item pode duplicar ou sumir.
+  - Um desligamento normal e as falhas temporárias do DataStore **não** causam isso: o ProfileStore tenta de novo e salva tudo ao fechar.
+  - **Decisão atual:** risco aceito. **Reavaliar antes de liberar as trocas ao público.** Para desligar as trocas, use `tradingEnabled = false` em [src/shared/Config/Social.luau](src/shared/Config/Social.luau).
+
 ## Como adicionar um ingrediente
 
 1. Em `Ingredients.luau`, copie um bloco e troque o `id`. O `id` fica em inglês, é único e **nunca muda depois de lançado**.

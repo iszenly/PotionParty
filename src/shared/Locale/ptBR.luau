@@ -131,6 +131,7 @@ local strings: { [string]: string } = {
 	["error.tradeCapacity"] = "Troca cancelada: não cabe na prateleira de alguém.",
 	["error.tradeCancelled"] = "Troca cancelada.",
 	["error.tradeLeft"] = "Troca cancelada: o outro jogador saiu.",
+	["error.tradingDisabled"] = "As trocas estão desativadas no momento.",
 	["error.pickIngredients"] = "Escolha os 2 ingredientes primeiro.",
 	["error.rebirthBrewing"] = "Esvazie seus caldeirões antes de virar Novo Mestre.",
 

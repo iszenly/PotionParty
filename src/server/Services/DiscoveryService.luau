@@ -94,11 +94,18 @@ local function isWorldRecord(value: any): boolean
 	return type(value) == "table" and type(value.userId) == "number" and type(value.display) == "string"
 end
 
--- Tenta ser o dono da receita. Retorna (dono, souEuOPrimeiro) ou nil se falhar.
-local function claimAsync(player: Player, recipeKey: string): (WorldRecord?, boolean)
+--[[
+	Tenta ser o dono da receita. Retorna (dono, souEuOPrimeiro, gravei):
+	- dono: o registro mundial (nil se a DataStore falhou);
+	- souEuOPrimeiro: o dono é este jogador;
+	- gravei: ESTA chamada gravou o registro. Só nesse caso anunciamos. Se o
+	  registro já era do próprio jogador (uma tentativa anterior gravou, mas o
+	  Grimório não chegou a ser salvo), marcamos o Grimório sem anunciar de novo.
+]]
+local function claimAsync(player: Player, recipeKey: string): (WorldRecord?, boolean, boolean)
 	local store = worldStore
 	if not store then
-		return nil, false
+		return nil, false, false
 	end
 	local mine: WorldRecord = {
 		userId = player.UserId,
@@ -123,12 +130,12 @@ local function claimAsync(player: Player, recipeKey: string): (WorldRecord?, boo
 	end)
 	if not success then
 		warn(`[DiscoveryService] falha ao registrar {recipeKey}: {err}`)
-		return nil, false
+		return nil, false, false
 	end
 	if existing then
-		return existing, existing.userId == player.UserId
+		return existing, existing.userId == player.UserId, false
 	end
-	return mine, true
+	return mine, true, true
 end
 
 local function announceWorldFirst(display: string, recipeName: string)
@@ -146,16 +153,20 @@ local function processEntry(player: Player, recipeKey: string, recipeName: strin
 	if not data or not entry or entry.by ~= nil then
 		return
 	end
-	local owner, isFirst = claimAsync(player, recipeKey)
+	local owner, isFirst, wroteNow = claimAsync(player, recipeKey)
 	if not owner then
 		return
 	end
 	-- O jogador pode ter saído durante a espera; "entry" é a mesma tabela dos dados.
+	-- Como "entry.by" ainda era nil, esta é a primeira vez que este perfil conta
+	-- esta descoberta: o contador não fica duplicado.
 	entry.by = owner.display
 	entry.byId = owner.userId
 	entry.first = isFirst
 	if isFirst then
 		data.worldFirsts += 1
+	end
+	if wroteNow then
 		announceWorldFirst(player.DisplayName, recipeName)
 	end
 	if player.Parent then

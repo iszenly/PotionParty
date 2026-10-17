@@ -105,7 +105,9 @@ local function potionTotal(offer: Offer): number
 	return total
 end
 
--- Confere a oferta que veio do cliente e devolve uma cópia limpa (ou nil).
+-- Confere o FORMATO da oferta que veio do cliente e devolve uma cópia limpa (ou nil).
+-- Não calcula receitas aqui: isso só acontece depois de conferir que o jogador tem
+-- os itens (correção P8 — evita que chaves inventadas encham a memória do servidor).
 local function cleanOffer(raw: any): Offer?
 	if type(raw) ~= "table" or type(raw.potions) ~= "table" or type(raw.ingredients) ~= "table" then
 		return nil
@@ -115,10 +117,6 @@ local function cleanOffer(raw: any): Offer?
 	for key, count in raw.potions do
 		stacks += 1
 		if stacks > Social.tradeMaxStacks or not Validate.text(key, 160) or not Validate.integer(count, 1, 9999) then
-			return nil
-		end
-		local recipeKey = RecipeKey.splitStack(key)
-		if not RecipeService.resolve(recipeKey) then
 			return nil
 		end
 		offer.potions[key] = count
@@ -245,7 +243,10 @@ end
 
 function TradeService.init()
 	Net.onInvoke("TradeRequest", function(player, targetUserId: any)
-		if not Validate.integer(targetUserId, 1, 2 ^ 52) then
+		if not Social.tradingEnabled then
+			return Net.fail("error.tradingDisabled")
+		end
+		if not Validate.userId(targetUserId) then
 			return Net.fail("error.invalid")
 		end
 		local target = Players:GetPlayerByUserId(targetUserId)
@@ -264,6 +265,10 @@ function TradeService.init()
 	end)
 
 	Net.onInvoke("TradeRespond", function(player, fromUserId: any, accept: any)
+		if not Social.tradingEnabled then
+			requests[player] = nil
+			return Net.fail("error.tradingDisabled")
+		end
 		local request = requests[player]
 		if not request or request.from.UserId ~= fromUserId or os.clock() - request.at > Social.tradeRequestTimeout then
 			return Net.fail("error.tradeExpired")
@@ -307,6 +312,12 @@ function TradeService.init()
 		if not owns(data, offer) then
 			return Net.fail("error.tradeNotOwned")
 		end
+		-- Só agora (itens confirmados no inventário) conferimos se as receitas existem.
+		for stackKey in offer.potions do
+			if not RecipeService.resolve((RecipeKey.splitStack(stackKey))) then
+				return Net.fail("error.invalid")
+			end
+		end
 		trade.offers[player] = offer
 		resetReady(trade) -- mudou a oferta: os dois precisam conferir de novo
 		sendState(trade)
@@ -328,7 +339,7 @@ function TradeService.init()
 
 	Net.onInvoke("TradeConfirm", function(player)
 		local trade = trades[player]
-		if not trade then
+		if not trade or not Social.tradingEnabled then
 			return Net.fail("error.noTrade")
 		end
 		local partner = partnerOf(trade, player)

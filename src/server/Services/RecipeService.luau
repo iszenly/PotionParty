@@ -33,8 +33,9 @@ type PotionEffect = Types.PotionEffect
 
 local RecipeService = {}
 
--- Cache: cada receita é calculada uma vez por servidor. false = chave inválida.
-local cache: { [string]: RecipeInfo | false } = {}
+-- Cache: cada receita VÁLIDA é calculada uma vez por servidor.
+-- (O número de receitas válidas é limitado; chaves inválidas nunca entram aqui.)
+local cache: { [string]: RecipeInfo } = {}
 
 -- Confere se a chave é válida e está no formato canônico (ordenada).
 local function parseKey(key: string): { string }?
@@ -181,11 +182,15 @@ end
 -- Retorna as informações da receita, ou nil se a chave for inválida.
 function RecipeService.resolve(key: string): RecipeInfo?
 	local cached = cache[key]
-	if cached ~= nil then
-		return if cached == false then nil else cached :: RecipeInfo
+	if cached then
+		return cached
 	end
 	local info = compute(key)
-	cache[key] = info or false
+	-- Só guarda receitas válidas: chaves inválidas não ocupam memória (correção P8).
+	-- Recalcular uma chave inválida é barato (para logo na validação).
+	if info then
+		cache[key] = info
+	end
 	return info
 end
 

@@ -41,6 +41,22 @@ function PlayerStats.cauldronCount(data: PlayerData): number
 	return count
 end
 
+--[[
+	Caldeirões que aparecem na tela: os que o jogador tem + qualquer caldeirão
+	"sobrando" que ainda tem preparo dentro (ex.: Game Pass reembolsado).
+	Nesses caldeirões sobrando dá para COLETAR, mas não começar preparo novo.
+]]
+function PlayerStats.visibleCauldronCount(data: PlayerData): number
+	local count = PlayerStats.cauldronCount(data)
+	for slotKey in data.cauldrons do
+		local slot = tonumber(slotKey)
+		if slot and slot > count then
+			count = slot
+		end
+	end
+	return count
+end
+
 -- Clientes NPC ao mesmo tempo na loja.
 function PlayerStats.maxCustomers(data: PlayerData): number
 	local count = Shop.baseCustomers + PlayerStats.level(data, "ShopShelves") * perLevel("ShopShelves")

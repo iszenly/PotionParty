@@ -82,7 +82,7 @@ function SplashService.init()
 		if not Validate.text(stackKey, 160) then
 			return Net.fail("error.invalid")
 		end
-		if targetUserId ~= nil and not Validate.integer(targetUserId, 1, 2 ^ 52) then
+		if targetUserId ~= nil and not Validate.userId(targetUserId) then
 			return Net.fail("error.invalid")
 		end
 		if (data.potions[stackKey] or 0) < 1 then

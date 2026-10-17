@@ -96,17 +96,19 @@ render = function()
 				Router.close()
 			end
 		end)
-		UI.button({
-			Text = "🤝 " .. Locale.t("ui.trade"),
-			LayoutOrder = 2,
-			Size = UDim2.fromOffset(110, 52),
-			MaxTextSize = 18,
-			Parent = actions,
-		}, function()
-			if Net.request("TradeRequest", player.UserId).ok then
-				Toast.show(Locale.t("ui.tradeSent"), "good")
-			end
-		end)
+		if Social.tradingEnabled then
+			UI.button({
+				Text = "🤝 " .. Locale.t("ui.trade"),
+				LayoutOrder = 2,
+				Size = UDim2.fromOffset(110, 52),
+				MaxTextSize = 18,
+				Parent = actions,
+			}, function()
+				if Net.request("TradeRequest", player.UserId).ok then
+					Toast.show(Locale.t("ui.tradeSent"), "good")
+				end
+			end)
+		end
 	end
 end
 

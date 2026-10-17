@@ -528,12 +528,17 @@ local function releasePlot(player: Player)
 	updateSign(plot)
 end
 
--- Vendas enquanto o jogador estava offline (mais baratas primeiro, sem mutadas).
-function ShopService.offlineSales(player: Player, data: PlayerData)
-	if data.lastLogout <= 0 then
-		return
+--[[
+	Vendas enquanto o jogador estava offline (mais baratas primeiro, sem mutadas).
+	lastSeen: quando o jogador foi visto pela última vez (vem do DataService.loaded).
+	O DataService já marcou data.lastLogout = agora ANTES desta função rodar, então o
+	pagamento e o horário novo sempre vão juntos no mesmo salvamento (veja DataService).
+]]
+function ShopService.offlineSales(player: Player, data: PlayerData, lastSeen: number)
+	if lastSeen <= 0 then
+		return -- jogador novo: nunca esteve offline
 	end
-	local elapsed = math.clamp(os.time() - data.lastLogout, 0, Shop.offlineMaxSeconds)
+	local elapsed = math.clamp(os.time() - lastSeen, 0, Shop.offlineMaxSeconds)
 	local passMultiplier = if PlayerStats.hasPass(data, "AutoSell") then Shop.autoSellOfflineMultiplier else 1
 	local maxSales = math.min(elapsed // Shop.offlineSaleInterval, Shop.offlineMaxSales * passMultiplier)
 	if maxSales <= 0 then
@@ -647,8 +652,8 @@ function ShopService.init()
 		return list
 	end)
 
-	DataService.loaded:Connect(function(player: Player, data: PlayerData)
-		ShopService.offlineSales(player, data)
+	DataService.loaded:Connect(function(player: Player, data: PlayerData, lastSeen: number)
+		ShopService.offlineSales(player, data, lastSeen)
 		assignPlot(player)
 		SyncService.push(player)
 	end)
@@ -683,7 +688,7 @@ function ShopService.init()
 
 	-- Teleporta para a loja de alguém (ou para a própria).
 	Net.onInvoke("VisitShop", function(player, targetUserId: any)
-		if not Validate.integer(targetUserId, 1, 2 ^ 52) then
+		if not Validate.userId(targetUserId) then
 			return Net.fail("error.invalid")
 		end
 		local target = Players:GetPlayerByUserId(targetUserId)

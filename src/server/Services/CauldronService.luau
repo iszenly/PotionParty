@@ -79,7 +79,8 @@ function CauldronService.init()
 		if not data then
 			return Net.fail("error.notLoaded")
 		end
-		if not Validate.integer(slot, 1, PlayerStats.cauldronCount(data)) then
+		-- visibleCauldronCount: permite coletar de um caldeirão extra que sumiu (correção P18).
+		if not Validate.integer(slot, 1, PlayerStats.visibleCauldronCount(data)) then
 			return Net.fail("error.invalid")
 		end
 		local slotKey = tostring(slot)

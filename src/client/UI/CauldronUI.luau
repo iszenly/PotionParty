@@ -137,7 +137,7 @@ end
 local function renderTabs(data: Types.PlayerData)
 	UI.clearChildren(tabs)
 	table.clear(tabButtons)
-	for index = 1, PlayerStats.cauldronCount(data) do
+	for index = 1, PlayerStats.visibleCauldronCount(data) do
 		local button = UI.button({
 			LayoutOrder = index,
 			Size = UDim2.new(0, 150, 1, -6),
@@ -225,7 +225,7 @@ render = function()
 	if not data or not isOpen then
 		return
 	end
-	if selectedCauldron > PlayerStats.cauldronCount(data) then
+	if selectedCauldron > PlayerStats.visibleCauldronCount(data) then
 		selectedCauldron = 1
 	end
 	-- Se os ingredientes mudaram (ex.: acabou de preparar), corrige a seleção.

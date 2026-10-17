@@ -109,14 +109,39 @@ local function brew()
 	if not a or not b or brewing then
 		return
 	end
+
+	-- 1) Checar amizade pode esperar uma chamada à web (só na 1ª vez de cada par;
+	--    depois fica em cache). Fazemos isso ANTES de gastar qualquer ingrediente.
+	brewing = true
+	local friends = FriendService.areFriends(a, b)
+	brewing = false
+
+	-- 2) Durante a espera alguém pode ter saído, trocado a escolha ou desmarcado
+	--    "Pronto". Se algo mudou, não prepara.
+	if sides.A ~= a or sides.B ~= b or not ready[a] or not ready[b] then
+		sendState()
+		return
+	end
 	local dataA, dataB = DataService.get(a), DataService.get(b)
 	local picksA, picksB = picks[a], picks[b]
 	if not dataA or not dataB or not picksA or not picksB then
 		return
 	end
-	-- Confere tudo de novo antes de gastar qualquer coisa.
-	local function canBrew(player: Player, data: Types.PlayerData, ids: { string }): boolean
-		if not IngredientService.hasAll(data, ids) then
+	local ids = table.clone(picksA)
+	for _, id in picksB do
+		table.insert(ids, id)
+	end
+	local recipeKey = RecipeKey.fromIds(ids)
+	local info = RecipeService.resolve(recipeKey)
+	if not info then
+		resetReady()
+		sendState()
+		return
+	end
+
+	-- 3) Confere tudo de novo antes de gastar qualquer coisa.
+	local function canBrew(player: Player, data: Types.PlayerData, playerPicks: { string }): boolean
+		if not IngredientService.hasAll(data, playerPicks) then
 			Announce.player(player, "error.notEnoughIngredients", nil, "toast")
 			return false
 		end
@@ -132,47 +157,37 @@ local function brew()
 		return
 	end
 
-	brewing = true
+	-- 4) Daqui até o fim não há nenhuma pausa: gasta e entrega tudo de uma vez.
 	IngredientService.consume(dataA, picksA)
 	IngredientService.consume(dataB, picksB)
-	local ids = table.clone(picksA)
-	for _, id in picksB do
-		table.insert(ids, id)
-	end
-	local recipeKey = RecipeKey.fromIds(ids)
-	local info = RecipeService.resolve(recipeKey)
-	local friends = FriendService.areFriends(a, b)
 
-	if info then
-		for _, player in { a, b } do
-			local data = if player == a then dataA else dataB
-			local luck = PlayerStats.luck(data) * (if friends then FRIEND_LUCK_BONUS else 1)
-			local mutation = MutationService.roll(WeatherService.current(), luck)
-			local stackKey = RecipeKey.stackKey(recipeKey, mutation)
-			data.potions[stackKey] = (data.potions[stackKey] or 0) + 1
-			data.stats.brewed += 1
-			local isNew = data.discovered[recipeKey] == nil
-			if isNew then
-				data.discovered[recipeKey] = { t = os.time() }
-				DiscoveryService.register(player, recipeKey, info.name)
-				DiscoveryService.markRankingDirty(player)
-				MissionService.progress(player, "discover", 1)
-			end
-			MissionService.progress(player, "brew", 1)
-			SyncService.push(player)
-			event:FireClient(player, {
-				kind = "result",
-				recipe = info,
-				stackKey = stackKey,
-				isNew = isNew,
-				mutation = mutation,
-			})
+	for _, player in { a, b } do
+		local data = if player == a then dataA else dataB
+		local luck = PlayerStats.luck(data) * (if friends then FRIEND_LUCK_BONUS else 1)
+		local mutation = MutationService.roll(WeatherService.current(), luck)
+		local stackKey = RecipeKey.stackKey(recipeKey, mutation)
+		data.potions[stackKey] = (data.potions[stackKey] or 0) + 1
+		data.stats.brewed += 1
+		local isNew = data.discovered[recipeKey] == nil
+		if isNew then
+			data.discovered[recipeKey] = { t = os.time() }
+			DiscoveryService.register(player, recipeKey, info.name)
+			DiscoveryService.markRankingDirty(player)
+			MissionService.progress(player, "discover", 1)
 		end
+		MissionService.progress(player, "brew", 1)
+		SyncService.push(player)
+		event:FireClient(player, {
+			kind = "result",
+			recipe = info,
+			stackKey = stackKey,
+			isNew = isNew,
+			mutation = mutation,
+		})
 	end
 
 	picks[a], picks[b] = {}, {}
 	resetReady()
-	brewing = false
 	sendState()
 end
 
